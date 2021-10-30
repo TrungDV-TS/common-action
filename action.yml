@@ -2,16 +2,22 @@ name: 'Hello World'
 description: 'Greet someone'
 inputs:
   DOCKER_REGISTRY:
+    required: false
     description: parameter
   DOCKER_USERNAME:
+    required: false
     description: parameter
   DOCKER_ACCESS_TOKEN:
+    required: false
     description: parameter
   SONAR_TOKEN:
+    required: false
     description: parameter
   SONAR_HOST_URL:
+    required: false
     description: parameter
   SONAR_PROJECT_KEY:
+    required: false
     description: parameter
 runs:
   using: "composite"
@@ -26,11 +32,8 @@ runs:
         password: ${{ inputs.DOCKER_ACCESS_TOKEN }}
 
     - name: Run unit test
-      run: make test-up
-
-    - name: Post Run unit test
-      if: ${{ always() }}
-      run: make test-down
+      run: make -i test-up test-down
+      shell: bash
 
     - name: SonarQube Scan
       uses: sonarsource/sonarqube-scan-action@master
