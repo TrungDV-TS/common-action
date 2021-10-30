@@ -1,21 +1,49 @@
 name: 'Hello World'
 description: 'Greet someone'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
-    required: true
-    default: 'World'
-outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-id }}
+  DOCKER_REGISTRY:
+    description: parameter
+  DOCKER_USERNAME:
+    description: parameter
+  DOCKER_ACCESS_TOKEN:
+    description: parameter
+  SONAR_TOKEN:
+    description: parameter
+  SONAR_HOST_URL:
+    description: parameter
+  SONAR_PROJECT_KEY:
+    description: parameter
 runs:
   using: "composite"
   steps:
-    - run: echo Hello ${{ inputs.who-to-greet }}.
-      shell: bash
-    - id: random-number-generator
-      run: echo "::set-output name=random-id::$(echo $RANDOM)"
-      shell: bash
-    - run: ${{ github.action_path }}/goodbye.sh
-      shell: bash
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Login to docker registry
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ inputs.DOCKER_REGISTRY}}
+        username: ${{ inputs.DOCKER_USERNAME }}
+        password: ${{ inputs.DOCKER_ACCESS_TOKEN }}
+
+    - name: Run unit test
+      run: make test-up
+
+    - name: Post Run unit test
+      if: ${{ always() }}
+      run: make test-down
+
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      env:
+        SONAR_TOKEN: ${{ inputs.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ inputs.SONAR_HOST_URL }}
+      with:
+        projectBaseDir: .
+        args: >
+          -Dsonar.projectKey=${{ inputs.SONAR_PROJECT_KEY }}
+          -Dsonar.verbose=true
+          -Dsonar.sources=.
+          -Dsonar.exclusions=**/*_test.go
+          -Dsonar.tests=.
+          -Dsonar.test.inclusions=**/*_test.go
+          -Dsonar.go.coverage.reportPaths=output/cover.out
