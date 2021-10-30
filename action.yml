@@ -32,7 +32,7 @@ runs:
         password: ${{ inputs.DOCKER_ACCESS_TOKEN }}
 
     - name: Run unit test
-      run: make -i test-up test-down
+      run: make test-up --keep-going test-down
       shell: bash
 
     - name: SonarQube Scan
